@@ -185,7 +185,7 @@ const FileManager = () => {
         },
         body: JSON.stringify({
           "username": sharename,
-          "docId": id,
+          "docID": id,
           "role": role
         }),
       });

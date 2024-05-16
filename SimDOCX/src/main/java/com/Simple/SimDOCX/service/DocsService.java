@@ -36,7 +36,6 @@ public class DocsService {
     }
 
     public boolean saveDoc(String documentID, Object[] body) {
-        mockDB.initDB();
         boolean flag = false;
         mockDB.DocsDB.forEach(doc -> {
             if (doc.getId().equals(documentID))
@@ -47,7 +46,6 @@ public class DocsService {
     }
 
     public List<UserDoc> getDocs(String username) {
-        mockDB.initDB();
         List<Role> roles = rolesRepository.findAll();
         roles.removeIf(role -> !role.getUsername().equals(username));
         List<UserDoc> userDocs = new ArrayList<>(); // Add this line to initialize the list
@@ -60,7 +58,6 @@ public class DocsService {
     }
 
     public boolean createDoc(String id, String title, String username) {
-        mockDB.initDB();
         Doc doc = new Doc();
         doc.setTitle(title);
         Optional<User> temp = usersRepository.findById(username);
@@ -83,7 +80,6 @@ public class DocsService {
     }
 
     public boolean deleteDoc(String id) {
-        mockDB.initDB();
         List<Role> roles = rolesRepository.findAll();
         roles.removeIf(role -> !role.getRole().equals("owner"));
         for (Role role : roles) {
@@ -97,7 +93,6 @@ public class DocsService {
     }
 
     public boolean renameDoc(String id, String title) {
-        mockDB.initDB();
         List<Role> roles = rolesRepository.findAll();
         roles.removeIf(role -> !role.getRole().equals("owner") && !role.getRole().equals("editor"));
         for (Role role : roles) {
@@ -118,12 +113,13 @@ public class DocsService {
         List<Role> roles = rolesRepository.findAll();
         roles.removeIf(role -> role.getDocID() == null || role.getUsername() == null
                 || !(role.getDocID().equals(docID) && role.getUsername().equals(username)));
-        System.out.println(roles);
         for (Role role : roles) {
             if (role.getRole().equals("owner")) {
                 return false;
             } else if (role.getRole().equals(roleStr)) {
                 return true;
+            } else {
+                rolesRepository.deleteById(role.getRoleID());
             }
         }
         Role role = new Role();
