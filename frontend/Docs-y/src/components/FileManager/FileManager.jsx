@@ -15,50 +15,194 @@ const FileManager = () => {
     username: "",
     role: "viewer",
   });
+  const [error, setError] = useState("");
 
   const { username } = useParams();
 
   useEffect(() => {
-    const user = database.find((user) => user.username === username);
+    // Fetch user data from the database
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8086/api/documents/${username}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          //body: JSON.stringify({ "username": username }),
+        });
 
-    if (user) {
-      setFiles(
-        user.documents.map((document) => ({
-          id: document.id,
-          name: document.name,
-          role: document.role,
-        }))
-      );
-    }
+        if (response.ok) {
+          const data = await response.json();
+          setFiles(
+            data.map((document) => ({
+              id: document.id,
+              title: document.title,
+              role: document.role,
+            }))
+          );
+        } else {
+          const data = await response.json();
+          setError(data.error || "An error occurred");
+        }
+      } catch (error) {
+        setError("An error occurred");
+        console.error(error);
+      }
+    };
+
+    fetchData();
+
+    // const user = database.find((user) => user.username === username);
+
+    // if (user) {
+    //   setFiles(
+    //     user.documents.map((document) => ({
+    //       id: document.id,
+    //       name: document.name,
+    //       role: document.role,
+    //     }))
+    //   );
+    // }
   }, [username]);
 
-  const handleCreateDocument = () => {
-    const newDocument = {
-      id: uuidv4(),
-      name: `Document ${files.length + 1}`,
-      role: "owner",
-    };
-    setFiles([...files, newDocument]);
-  };
+  const handleCreateDocument = async () => {
+    try {
+      const response = await fetch("http://localhost:8086/api/createDoc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "username": username,
+          "docId": uuidv4(),
+          "docTitle": `Document ${files.length + 1}`,
+          "role": "owner"
+        }),
+      });
 
-  const handleDeleteDocument = (id) => {
-    const updatedFiles = files.filter((file) => file.id !== id);
-    setFiles(updatedFiles);
-  };
-
-  const handleRenameDocument = () => {
-    const updatedFiles = files.map((file) => {
-      if (file.id === renameDocument.id) {
-        return { ...file, name: renameDocument.newName };
+      if (response.ok) {
+        //const data = await response.json();
+        console.log("Document created successfully!");
+        const newDocument = {
+          id: uuidv4(),
+          title: `Document ${files.length + 1}`,
+          role: "owner",
+        };
+        setFiles([...files, newDocument]);
+      } else {
+        const data = await response.json();
+        setError(data.error || "An error occurred");
       }
-      return file;
-    });
-    setFiles(updatedFiles);
-    setRenameDocument({ id: null, newName: "" });
+    } catch (error) {
+      setError("An error occurred");
+      console.error(error);
+    }
+    // const newDocument = {
+    //   id: uuidv4(),
+    //   name: `Document ${files.length + 1}`,
+    //   role: "owner",
+    // };
+    // setFiles([...files, newDocument]);
   };
 
-  const handleShareDocument = () => {
-    setShareDocument({ id: null, username: "", role: "viewer" });
+  const handleDeleteDocument = async (id) => {
+    try {
+      const response = await fetch("http://localhost:8086/api/deleteDoc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "username": username,
+          "docId": id
+        }),
+      });
+
+      if (response.ok) {
+        //const data = await response.json();
+        const updatedFiles = files.filter((file) => file.id !== id);
+        setFiles(updatedFiles);
+        console.log("Document deleted successfully!");
+      } else {
+        const data = await response.json();
+        setError(data.error || "An error occurred");
+      }
+    } catch (error) {
+      setError("An error occurred");
+      console.error(error);
+    }
+  };
+
+  const handleRenameDocument = async (id, newName) => {
+    try {
+      const response = await fetch("http://localhost:8086/api/renameDoc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "username": username,
+          "docId": id,
+          "docTitle": newName
+        }),
+      });
+
+      if (response.ok) {
+        //const data = await response.json();
+        const updatedFiles = files.map((file) => {
+          if (file.id === id) {
+            return { ...file, name: newName };
+          } else
+            return file;
+        });
+        setRenameDocument({ id: id, newName: "" });
+        setFiles(updatedFiles);
+        console.log("Document updated successfully!");
+      } else {
+        const data = await response.json();
+        setError(data.error || "An error occurred");
+      }
+    } catch (error) {
+      setError("An error occurred");
+      console.error(error);
+    }
+    // const updatedFiles = files.map((file) => {
+    //   if (file.id === renameDocument.id) {
+    //     return { ...file, name: renameDocument.newName };
+    //   }
+    //   return file;
+    // });
+    // setFiles(updatedFiles);
+    // setRenameDocument({ id: null, newName: "" });
+  };
+
+  const handleShareDocument = async (id, sharename, role) => {
+    try {
+      const response = await fetch("http://localhost:8086/api/shareDoc", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "username": sharename,
+          "docId": id,
+          "role": role
+        }),
+      });
+
+      if (response.ok) {
+        //const data = await response.json();
+        setShareDocument({ id: null, username: "", role: "viewer" });
+        console.log("Document shared successfully!");
+      } else {
+        const data = await response.json();
+        setError(data.error || "An error occurred");
+      }
+    } catch (error) {
+      setError("An error occurred");
+      console.error(error);
+    }
+    //setShareDocument({ id: null, username: "", role: "viewer" });
   };
 
   return (
@@ -86,7 +230,7 @@ const FileManager = () => {
               className="w-full px-3 py-2 text-black rounded-md border border-gray-300 focus:outline-none focus:border-blue-500"
             />
             <button
-              onClick={handleRenameDocument}
+              onClick={() => handleRenameDocument(renameDocument.id, renameDocument.newName)}
               className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out mt-2"
             >
               Rename
@@ -122,7 +266,7 @@ const FileManager = () => {
               <option value="editor">Editor</option>
             </select>
             <button
-              onClick={handleShareDocument}
+              onClick={() => handleShareDocument(shareDocument.id, shareDocument.username, shareDocument.role)}
               className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out mt-2"
             >
               Share
@@ -144,11 +288,11 @@ const FileManager = () => {
               <File
                 key={file.id}
                 id={file.id}
-                name={file.name}
+                name={file.title}
                 role={file.role}
                 onDelete={() => handleDeleteDocument(file.id)}
                 onRename={() =>
-                  setRenameDocument({ id: file.id, newName: file.name })
+                  setRenameDocument({ id: file.id, newName: file.title })
                 }
                 onShare={() =>
                   setShareDocument({
